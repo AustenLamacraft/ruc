@@ -34,7 +34,7 @@ def ruc_channel(ρ):
     for gate in gates[1::-1]:
         ρ = np.einsum('aACx,bBDy,CDab...->AB...xy', gate, gate.conj(), ρ)
 
-    ρ = np.einsum('Cx,Dy,CD...->...xy', gates[-1][0,0], gates[-1][0,0].conj(), ρ)
+    ρ = np.einsum('Cx,Dy,CD...->...xy', gates[-1][0, 0], gates[-1][0, 0].conj(), ρ)
 
     # Return to original order of indices
     perm = np.arange(2*depth).reshape([-1,2])[::-1].reshape([-1])
