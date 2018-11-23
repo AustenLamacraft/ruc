@@ -1,3 +1,4 @@
+import math
 import numpy as np
 from scipy.stats import unitary_group
 
@@ -36,9 +37,10 @@ def ruc_channel(ρ):
     ρ = np.einsum('Cx,Dy,CD...->...xy', gates[-1][0,0], gates[-1][0,0].conj(), ρ)
 
     # Return to original order of indices
-    perm = np.arange(2*depth).reshape([-1,2])[::-1].reshape([2*depth])
+    perm = np.arange(2*depth).reshape([-1,2])[::-1].reshape([-1])
 
     return ρ.transpose(perm)
+
 
 def random_gates(q, depth):
     return [np.ascontiguousarray(unitary_group.rvs(q ** 2).reshape(4 * [q])) for _ in range(depth)]
@@ -75,3 +77,32 @@ def trace_square(tensor):
     num_indices = len(tensor.shape)
     einsum_str = indices1[:num_indices] + "," + indices2[:num_indices] + "->"
     return np.einsum(einsum_str, tensor, tensor)
+
+
+def tensor_to_matrix(tensor):
+    depth = len(tensor.shape) // 2
+    q = tensor.shape[0]
+    tensor = tensor.transpose(list(range(0, 2 * depth, 2)) + list(range(1, 2 * depth, 2)))
+    return tensor.reshape(2 * [q ** depth])
+
+
+def matrix_to_tensor(matrix, q):
+    depth = int(math.log(matrix.shape[0], q))
+    tensor = matrix.reshape(2 * depth * [q])
+    axis_order = np.arange(2 * depth).reshape([2, -1]).T.reshape([-1])
+    return tensor.transpose(axis_order)
+
+
+def random_ρ(q, depth):
+    """
+    Generate a random density matrix with row and column multi-indices as [r0, c0, r1, c1, ...]
+    """
+    random_matrix = np.random.rand(*2*[q**depth])
+    random_matrix = random_matrix @ random_matrix.transpose()
+    random_tensor = matrix_to_tensor(random_matrix, q)
+    ρ = random_tensor / tensor_trace(random_tensor)
+    return ρ
+
+
+
+

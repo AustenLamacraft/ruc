@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from numpy.testing import assert_allclose, assert_almost_equal
-from ruc_einsum import random_gates, ruc_channel, tensor_trace, tensor_conj_transp
+from ruc_einsum import random_gates, ruc_channel, tensor_trace, tensor_conj_transp, random_ρ
 
 
 class TestRandomCircuitFunctions(unittest.TestCase):
@@ -43,3 +43,10 @@ class TestRandomCircuitFunctions(unittest.TestCase):
         Use Choi form to test for positivity
         """
         pass
+
+    def testRandomRhoUnitTrace(self):
+        q = 2
+        depth = 3
+        rho = random_ρ(q, depth)
+        trace = tensor_trace(rho)
+        assert_almost_equal(trace, 1.)
