@@ -8,7 +8,7 @@ class TestRandomCircuitFunctions(unittest.TestCase):
 
     def testRandomGatesAreUnitary(self):
         q = 2
-        depth = 3
+        depth = 4
         gates = random_gates(q, depth)
         gates_as_matrices = [gate.reshape(2*[q**2]) for gate in gates]
         uudag = [gate @ gate.conj().transpose() for gate in gates_as_matrices]
@@ -16,14 +16,14 @@ class TestRandomCircuitFunctions(unittest.TestCase):
 
     def testGatesAreCContiguous(self):
         q = 2
-        depth = 3
+        depth = 4
         gates = random_gates(q, depth)
         for gate in gates:
             assert(gate.flags['C_CONTIGUOUS'] == True)
 
     def testRucChannelTracePreserving(self):
         q = 2
-        depth = 3
+        depth = 4
         input_rho = np.random.rand(*2*depth*[q])
         input_trace = tensor_trace(input_rho)
         output_rho = ruc_channel(input_rho)

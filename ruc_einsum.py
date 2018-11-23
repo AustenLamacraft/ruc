@@ -31,7 +31,7 @@ def ruc_channel(ρ):
 
     ρ = np.einsum('aACx,bBCy,ab...->AB...xy', gates[0], gates[0].conj(), ρ)
 
-    for gate in gates[1::-2]:
+    for gate in gates[1::-1]:
         ρ = np.einsum('aACx,bBDy,CDab...->AB...xy', gate, gate.conj(), ρ)
 
     ρ = np.einsum('Cx,Dy,CD...->...xy', gates[-1][0,0], gates[-1][0,0].conj(), ρ)
@@ -43,7 +43,7 @@ def ruc_channel(ρ):
 
 
 def random_gates(q, depth):
-    return [np.ascontiguousarray(unitary_group.rvs(q ** 2).reshape(4 * [q])) for _ in range(depth)]
+    return unitary_group.rvs(q ** 2, size=depth).reshape([depth, q, q, q, q])
 
 
 def tensor_trace(tensor):
