@@ -21,14 +21,15 @@ class TestRandomCircuitFunctions(unittest.TestCase):
         for gate in gates:
             assert(gate.flags['C_CONTIGUOUS'] == True)
 
-    def testIdentityGatesAppliedTwiceGivePureState(self):
+    def testIdentityGatesRepeatedGivesPureState(self):
         q = 2
         depth = 4
         id_gates = [np.identity(q ** 2).reshape([q, q, q, q]) for _ in range(depth)]
-        input_rho = random_ρ(q, depth)
-        output_rho = apply_gates(input_rho, id_gates)
-        output_rho = apply_gates(output_rho, id_gates)
-        output_evals = eigh(tensor_to_matrix(output_rho), eigvals_only=True)
+        rho = random_ρ(q, depth)
+        for _ in range(2):
+            rho = apply_gates(rho, id_gates)
+
+        output_evals = eigh(tensor_to_matrix(rho), eigvals_only=True)
         expected = np.zeros(q**depth)
         expected[-1] = 1.
         assert_almost_equal(expected, output_evals)
