@@ -1,12 +1,13 @@
 import math
 import numpy as np
 from scipy.stats import unitary_group
+from scipy.linalg import eigh
 
 
-def ruc_channel(ρ):
+
+def apply_gates(ρ, gates):
     """
-    Quantum channel corresponding to fixed depth random
-    unitary circuit.
+    Quantum channel corresponding to fixed depth circuit defined by gates.
 
     ρ is a numpy array of shape `[q,q,...q]` (`2*depth` times),
     where q is the local Hilbert space dimension.
@@ -19,7 +20,6 @@ def ruc_channel(ρ):
     shape = ρ.shape
     q = shape[0]
     depth = len(shape) // 2
-    gates = random_gates(q, depth)
 
     # First trace out the first index
     ρ = np.trace(ρ, axis1=0, axis2=1)
@@ -27,7 +27,7 @@ def ruc_channel(ρ):
     # We are going to 'a,h,...' for 'in' indices, `x,y,.... for 'out'
     # Capitals for contractions between unitaries
     # After contraction we move indices to the end using ellipsis notation
-    # This will have the effect of reversing the ordering of the layers.
+    # After going through all the gates the indices are back in their starting position.
 
     ρ = np.einsum('aACx,bBCy,ab...->AB...xy', gates[0], gates[0].conj(), ρ)
 
@@ -36,10 +36,7 @@ def ruc_channel(ρ):
 
     ρ = np.einsum('Cx,Dy,CD...->...xy', gates[-1][0, 0], gates[-1][0, 0].conj(), ρ)
 
-    # Return to original order of indices
-    perm = np.arange(2*depth).reshape([-1,2])[::-1].reshape([-1])
-
-    return ρ.transpose(perm)
+    return ρ
 
 
 def random_gates(q, depth):

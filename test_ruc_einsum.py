@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from numpy.testing import assert_allclose, assert_almost_equal
-from ruc_einsum import random_gates, ruc_channel, tensor_trace, tensor_conj_transp, random_ρ
+from ruc_einsum import *
 
 
 class TestRandomCircuitFunctions(unittest.TestCase):
@@ -21,21 +21,33 @@ class TestRandomCircuitFunctions(unittest.TestCase):
         for gate in gates:
             assert(gate.flags['C_CONTIGUOUS'] == True)
 
+    def testIdentityGatesAppliedTwiceGivePureState(self):
+        q = 2
+        depth = 4
+        id_gates = [np.identity(q ** 2).reshape([q, q, q, q]) for _ in range(depth)]
+        input_rho = random_ρ(q, depth)
+        output_rho = apply_gates(input_rho, id_gates)
+        output_rho = apply_gates(output_rho, id_gates)
+        output_evals = eigh(tensor_to_matrix(output_rho), eigvals_only=True)
+        expected = np.zeros(q**depth)
+        expected[-1] = 1.
+        assert_almost_equal(expected, output_evals)
+
     def testRucChannelTracePreserving(self):
         q = 2
         depth = 4
-        input_rho = np.random.rand(*2*depth*[q])
+        input_rho = random_ρ(q, depth)
         input_trace = tensor_trace(input_rho)
-        output_rho = ruc_channel(input_rho)
+        output_rho = apply_gates(input_rho, random_gates(q, depth))
         output_trace = tensor_trace(output_rho)
         assert_almost_equal(input_trace, output_trace)
 
     def testRucChannelHermiticityPreserving(self):
         q = 2
         depth = 3
-        input_rho = np.random.rand(*2 * depth * [q])
+        input_rho = random_ρ(q, depth)
         input_rho = (input_rho + tensor_conj_transp(input_rho)) / 2
-        output_rho = ruc_channel(input_rho)
+        output_rho = apply_gates(input_rho, random_gates(q, depth))
         assert_almost_equal(output_rho, tensor_conj_transp(output_rho))
 
     def testRucChannelPositive(self):
