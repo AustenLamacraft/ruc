@@ -4,8 +4,7 @@ from scipy.stats import unitary_group
 from scipy.linalg import eigh
 
 
-
-def apply_gates(ρ, gates):
+def cptp_map(ρ, gates):
     """
     Quantum channel corresponding to fixed depth circuit defined by gates.
 
@@ -17,11 +16,7 @@ def apply_gates(ρ, gates):
     Returns: output density matrix of the same shape
     """
 
-    shape = ρ.shape
-    q = shape[0]
-    depth = len(shape) // 2
-
-    # First trace out the first index
+    # Trace out the first index
     ρ = np.trace(ρ, axis1=0, axis2=1)
 
     # We are going to 'a,h,...' for 'in' indices, `x,y,.... for 'out'
@@ -37,6 +32,23 @@ def apply_gates(ρ, gates):
     ρ = np.einsum('Cx,Dy,CD...->...xy', gates[-1][0, 0], gates[-1][0, 0].conj(), ρ)
 
     return ρ
+
+def apply_gates(state, gates):
+    """
+    Apply unitary gates to ancilla states, starting with a randomly chosen pair of final states.
+    Resulting state is then normalized.
+    """
+
+    q = state.shape[0]
+    traj = np.random.randint(q, size=2)
+    state = np.einsum('aA,a...->A...', gates[0][:, :, traj[0], traj[1]], state)
+
+    for gate in gates[1::-1]:
+        state = np.einsum('aABx,Ba...->A...x', gate, state)
+
+    state = np.einsum('Bx,B...->...x', gates[-1][0, 0], state)
+
+    return state / np.sqrt(np.einsum("...,...", state, state))
 
 
 def random_gates(q, depth):
@@ -100,6 +112,12 @@ def random_ρ(q, depth):
     ρ = random_tensor / tensor_trace(random_tensor)
     return ρ
 
+def random_state(q, depth):
+    """
+    Generate a random state
+    """
+    random_state = np.random.rand(* depth * [q])
+    return random_state / np.sqrt(np.einsum("...,...", random_state, random_state))
 
 
 

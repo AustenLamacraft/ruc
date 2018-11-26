@@ -27,31 +27,31 @@ class TestRandomCircuitFunctions(unittest.TestCase):
         id_gates = [np.identity(q ** 2).reshape([q, q, q, q]) for _ in range(depth)]
         rho = random_ρ(q, depth)
         for _ in range(2):
-            rho = apply_gates(rho, id_gates)
+            rho = cptp_map(rho, id_gates)
 
         output_evals = eigh(tensor_to_matrix(rho), eigvals_only=True)
         expected = np.zeros(q**depth)
         expected[-1] = 1.
         assert_almost_equal(expected, output_evals)
 
-    def testRucChannelTracePreserving(self):
+    def testCPTPMapTracePreserving(self):
         q = 2
         depth = 4
         input_rho = random_ρ(q, depth)
         input_trace = tensor_trace(input_rho)
-        output_rho = apply_gates(input_rho, random_gates(q, depth))
+        output_rho = cptp_map(input_rho, random_gates(q, depth))
         output_trace = tensor_trace(output_rho)
         assert_almost_equal(input_trace, output_trace)
 
-    def testRucChannelHermiticityPreserving(self):
+    def testCPTPMapHermiticityPreserving(self):
         q = 2
         depth = 3
         input_rho = random_ρ(q, depth)
         input_rho = (input_rho + tensor_conj_transp(input_rho)) / 2
-        output_rho = apply_gates(input_rho, random_gates(q, depth))
+        output_rho = cptp_map(input_rho, random_gates(q, depth))
         assert_almost_equal(output_rho, tensor_conj_transp(output_rho))
 
-    def testRucChannelPositive(self):
+    def testCPTPMapPositive(self):
         """
         Use Choi form to test for positivity
         """
@@ -63,3 +63,11 @@ class TestRandomCircuitFunctions(unittest.TestCase):
         rho = random_ρ(q, depth)
         trace = tensor_trace(rho)
         assert_almost_equal(trace, 1.)
+
+    def testApplyGatesPreservesNorm(self):
+        q = 2
+        depth = 3
+        gates = random_gates(q, depth)
+        state = random_state(q, depth)
+        state = apply_gates(state, gates)
+        assert_almost_equal(1., np.einsum("...,...", state, state))
