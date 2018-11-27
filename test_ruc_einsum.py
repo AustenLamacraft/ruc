@@ -66,8 +66,16 @@ class TestRandomCircuitFunctions(unittest.TestCase):
 
     def testApplyGatesPreservesNorm(self):
         q = 2
-        depth = 3
+        depth = 4
         gates = random_gates(q, depth)
         state = random_state(q, depth)
         state = apply_gates(state, gates)
-        assert_almost_equal(1., np.einsum("...,...", state, state))
+        assert_almost_equal(1., inner_product(state, state))
+
+    def testInnerProductsLessThanUnity(self):
+        q = 2
+        depth = 4
+        for _ in range(10):
+            state1 = random_state(q, depth)
+            state2 = random_state(q, depth)
+            assert(np.abs(inner_product(state1, state2)) < 1.)

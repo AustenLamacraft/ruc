@@ -26,12 +26,13 @@ def cptp_map(ρ, gates):
 
     ρ = np.einsum('aACx,bBCy,ab...->AB...xy', gates[0], gates[0].conj(), ρ)
 
-    for gate in gates[1::-1]:
+    for gate in gates[1:-1]:
         ρ = np.einsum('aACx,bBDy,CDab...->AB...xy', gate, gate.conj(), ρ)
 
     ρ = np.einsum('Cx,Dy,CD...->...xy', gates[-1][0, 0], gates[-1][0, 0].conj(), ρ)
 
     return ρ
+
 
 def apply_gates(state, gates):
     """
@@ -43,12 +44,12 @@ def apply_gates(state, gates):
     traj = np.random.randint(q, size=2)
     state = np.einsum('aA,a...->A...', gates[0][:, :, traj[0], traj[1]], state)
 
-    for gate in gates[1::-1]:
+    for gate in gates[1:-1]:
         state = np.einsum('aABx,Ba...->A...x', gate, state)
 
     state = np.einsum('Bx,B...->...x', gates[-1][0, 0], state)
 
-    return state / np.sqrt(np.einsum("...,...", state, state))
+    return state / np.sqrt(inner_product(state, state))
 
 
 def random_gates(q, depth):
@@ -88,6 +89,15 @@ def trace_square(tensor):
     return np.einsum(einsum_str, tensor, tensor)
 
 
+def inner_product(state1, state2):
+    """
+    Calculate the inner product of two states.
+    """
+    assert(state1.shape == state2.shape)
+    num_indices = len(state1.shape)
+    return np.tensordot(state1.conj(), state2, axes=num_indices)
+
+
 def tensor_to_matrix(tensor):
     depth = len(tensor.shape) // 2
     q = tensor.shape[0]
@@ -112,12 +122,13 @@ def random_ρ(q, depth):
     ρ = random_tensor / tensor_trace(random_tensor)
     return ρ
 
+
 def random_state(q, depth):
     """
-    Generate a random state
+    Generate a random normalized state
     """
     random_state = np.random.rand(* depth * [q])
-    return random_state / np.sqrt(np.einsum("...,...", random_state, random_state))
+    return random_state / np.sqrt(inner_product(random_state, random_state))
 
 
 
