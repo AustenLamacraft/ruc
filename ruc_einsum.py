@@ -24,12 +24,15 @@ def cptp_map(ρ, gates):
     # After contraction we move indices to the end using ellipsis notation
     # After going through all the gates the indices are back in their starting position.
 
-    ρ = np.einsum('aACx,bBCy,ab...->AB...xy', gates[0], gates[0].conj(), ρ)
+    ρ = np.einsum('aACx,bBCy,ab...->AB...xy', gates[0], gates[0].conj(), ρ,
+                  optimize=['einsum_path', (0, 1), (0, 1)])
 
     for gate in gates[1:-1]:
-        ρ = np.einsum('aACx,bBDy,CDab...->AB...xy', gate, gate.conj(), ρ)
+        ρ = np.einsum('aACx,bBDy,CDab...->AB...xy', gate, gate.conj(), ρ,
+                      optimize=['einsum_path', (0, 2), (0, 1)])
 
-    ρ = np.einsum('Cx,Dy,CD...->...xy', gates[-1][0, 0], gates[-1][0, 0].conj(), ρ)
+    ρ = np.einsum('Cx,Dy,CD...->...xy', gates[-1][0, 0], gates[-1][0, 0].conj(), ρ,
+                  optimize=['einsum_path', (0, 2), (0, 1)])
 
     return ρ
 
