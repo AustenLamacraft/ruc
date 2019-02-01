@@ -3,7 +3,6 @@ import numpy as np
 from numpy.testing import assert_allclose, assert_almost_equal
 from ruc import *
 
-
 class TestRandomCircuitFunctions(unittest.TestCase):
 
     def testRandomGatesAreUnitary(self):
@@ -23,9 +22,9 @@ class TestRandomCircuitFunctions(unittest.TestCase):
 
     def testIdentityGatesRepeatedGivesPureState(self):
         q = 2
-        depth = 4
+        depth = 5
         id_gates = [np.identity(q ** 2).reshape([q, q, q, q]) for _ in range(depth)]
-        rho = random_ρ(q, depth)
+        rho = random_ρ(q, depth - 1)
         for _ in range(2):
             rho = cptp_map(rho, id_gates)
 
@@ -37,7 +36,7 @@ class TestRandomCircuitFunctions(unittest.TestCase):
     def testCPTPMapTracePreserving(self):
         q = 2
         depth = 4
-        input_rho = random_ρ(q, depth)
+        input_rho = random_ρ(q, depth - 1)
         input_trace = tensor_trace(input_rho)
         output_rho = cptp_map(input_rho, random_gates(q, depth))
         output_trace = tensor_trace(output_rho)
@@ -45,11 +44,28 @@ class TestRandomCircuitFunctions(unittest.TestCase):
 
     def testCPTPMapHermiticityPreserving(self):
         q = 2
-        depth = 3
-        input_rho = random_ρ(q, depth)
+        depth = 4
+        input_rho = random_ρ(q, depth - 1)
         input_rho = (input_rho + tensor_conj_transp(input_rho)) / 2
         output_rho = cptp_map(input_rho, random_gates(q, depth))
         assert_almost_equal(output_rho, tensor_conj_transp(output_rho))
+
+    def testCPTPMapAndApplyGatesConsistent(self):
+        q = 2
+        depth = 4
+        gates = random_gates(q, depth)
+        input_state = random_state(q, depth - 1)
+        input_rho = pure_ρ(input_state)
+        out_1 = cptp_map(input_rho, gates)
+        output_state = apply_gates(input_state, gates)
+
+        # Use the q^2 output states to make a density matrix
+        out_2 = np.tensordot(np.transpose(output_state, list(range(2, depth + 1)) + [0, 1]), output_state.conj(), axes=2)
+        # Now put the axes in the right order
+        index_order = np.arange(2 * (depth - 1)).reshape(2, -1).T.flatten()
+        out_2 = np.transpose(out_2, index_order)
+        assert_almost_equal(out_1, out_2)
+
 
     def testCPTPMapPositive(self):
         """
@@ -68,9 +84,17 @@ class TestRandomCircuitFunctions(unittest.TestCase):
         q = 2
         depth = 4
         gates = random_gates(q, depth)
-        state = random_state(q, depth)
+        state = random_state(q, depth - 1)
         state = apply_gates(state, gates)
         assert_almost_equal(1., inner_product(state, state))
+
+    def testPureRhoIsPure(self):
+        q = 2
+        depth = 4
+        state = random_state(q, depth)
+        rho = pure_ρ(state)
+        assert_almost_equal(1., trace_square(rho))
+
 
     def testInnerProductsLessThanUnity(self):
         q = 2
