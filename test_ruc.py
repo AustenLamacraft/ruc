@@ -66,6 +66,13 @@ class TestRandomCircuitFunctions(unittest.TestCase):
         out_2 = np.transpose(out_2, index_order)
         assert_almost_equal(out_1, out_2)
 
+    def testNextStepGivesProbabilities(self):
+        q = 2
+        depth = 4
+        gates = random_gates(q, depth)
+        input_state = random_state(q, depth - 1)
+        probs = next_step(input_state, gates)
+        assert_almost_equal(1., np.sum(probs))
 
     def testCPTPMapPositive(self):
         """

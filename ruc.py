@@ -11,15 +11,15 @@ Gates are indexed from the top to the bottom of circuit (going __back__ in time)
 For consistency with apply_gates we don't use the first gate, and check that the number of gates is one more 
 than the number of row indices.
 
-    Indexing of a unitary U_{ab,cd} is like this
+Indexing of a unitary U_{ab,cd} is like this
 
-    c   d
-    |   |
-    -----
-    | U |
-    -----
-    |   |
-    a   b
+c   d
+|   |
+-----
+| U |
+-----
+|   |
+a   b
 
 """
 
@@ -43,7 +43,7 @@ def cptp_map(ρ, gates):
     # Trace out the first index
     ρ = np.trace(ρ, axis1=0, axis2=1)
 
-    # We are going to denote 'a,h,...' for 'in' indices, `x,y,.... for 'out'
+    # We are going to denote 'a,b,...' for 'in' indices, `x,y,.... for 'out'
     # Capitals for contractions between unitaries
     # After contraction we move indices to the end using ellipsis notation
     # After going through all the gates the indices are back in their starting position.
@@ -63,18 +63,13 @@ def cptp_map(ρ, gates):
 
 def apply_gates(state, gates):
     """
-    Apply unitary gates to ancilla states, starting with a randomly chosen pair of final states.
-    Probability of final states is chosen based on state and matrices
-    Resulting state is then normalized.
-
+    Apply unitary gates to ancilla states.
     Returns state of ancilla AND two physical sites (as the first two indices)
     """
 
-    print(len(gates), len(state.shape))
     assert (len(gates) == len(state.shape) + 1), "Number of gates must be one more than the number of state indices."
 
     state = np.einsum('Aast,a...->A...st', gates[0], state)
-
 
     for gate in gates[1:-1]:
         state = np.einsum('AaxB,Ba...->A...x', gate, state)
@@ -84,9 +79,19 @@ def apply_gates(state, gates):
     return state
 
 
-def random_gates(q, depth):
-    return unitary_group.rvs(q ** 2, size=depth).reshape([depth, q, q, q, q])
+def next_step(state, gates):
+    """
+    Return next ancilla state from q**2 possible outcomes, as well as indices (s_1, s_2) of physical states.
+    """
 
+    state = apply_gates(state, gates)
+    q = state.shape[0]
+    probs = np.zeros([q, q])
+    for phys_index in np.ndindex(q, q):
+        ancilla_state = state[phys_index]
+        probs[phys_index] = square_norm(ancilla_state)
+
+    return probs
 
 def tensor_trace(tensor):
     """
@@ -104,7 +109,7 @@ def tensor_conj_transp(tensor):
     """
     tensor = tensor.conj()
     num_indices = len(tensor.shape)
-    trans_perm = np.arange(num_indices).reshape([-1,2])[:,::-1].reshape([-1])
+    trans_perm = np.arange(num_indices).reshape([-1,2])[:,::-1].flatten()
     tensor = tensor.transpose(trans_perm)
 
     return tensor
@@ -114,12 +119,8 @@ def trace_square(tensor):
     """
     Calculate the trace of the square of a tensor with rows and column multi-indices as [r0, c0, r1, c1, ...]
     """
-    indices1 = "abcdefghijklmnopqrstuvwxyz"
-    indices2 = "badcfehgjilknmporqtsvuxwzy"
     num_indices = len(tensor.shape)
-    einsum_str = indices1[:num_indices] + "," + indices2[:num_indices] + "->"
-    return np.einsum(einsum_str, tensor, tensor)
-
+    return np.tensordot(tensor, tensor_conj_transp(tensor), axes=num_indices)
 
 def inner_product(state1, state2):
     """
@@ -129,6 +130,17 @@ def inner_product(state1, state2):
     num_indices = len(state1.shape)
     return np.tensordot(state1.conj(), state2, axes=num_indices)
 
+def square_norm(state):
+    return inner_product(state, state).real
+
+def pure_ρ(state):
+    """
+    Return a pure density matrix corresponding to the input state in format [r0, c0, r1, c1, ...]
+    """
+    num_indices= len(state.shape)
+    ρ =  np.tensordot(state, state.conj(), axes=0)
+    index_order =  np.arange(2 * num_indices).reshape(2, -1).T.flatten()
+    return np.transpose(ρ, axes=index_order)
 
 def tensor_to_matrix(tensor):
     num_row_indices = len(tensor.shape) // 2
@@ -144,6 +156,10 @@ def matrix_to_tensor(matrix, q):
     return tensor.transpose(axis_order)
 
 
+def random_gates(q, depth):
+    return unitary_group.rvs(q ** 2, size=depth).reshape([depth, q, q, q, q])
+
+
 def random_ρ(q, depth):
     """
     Generate a random density matrix with row and column multi-indices as [r0, c0, r1, c1, ...]
@@ -154,22 +170,13 @@ def random_ρ(q, depth):
     ρ = random_tensor / tensor_trace(random_tensor)
     return ρ
 
-def pure_ρ(state):
-    """
-    Return a pure density matrix corresponding to the input state in format [r0, c0, r1, c1, ...]
-    """
-    num_indices= len(state.shape)
-    ρ =  np.tensordot(state, state.conj(), axes=0)
-    index_order =  np.arange(2 * num_indices).reshape(2, -1).T.flatten()
-    return np.transpose(ρ, axes=index_order)
-
 
 def random_state(q, depth):
     """
     Generate a random normalized state
     """
     random_state = np.random.rand(* depth * [q])
-    return random_state / np.sqrt(inner_product(random_state, random_state))
+    return random_state / np.sqrt(square_norm(random_state))
 
 
 
