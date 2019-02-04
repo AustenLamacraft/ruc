@@ -46,13 +46,13 @@ class TestRandomCircuitFunctions(unittest.TestCase):
         q = 2
         depth = 4
         input_rho = random_ρ(q, depth - 1)
-        input_rho = (input_rho + tensor_conj_transp(input_rho)) / 2
+        input_rho = (input_rho + tensor_transpose(input_rho).conj()) / 2
         output_rho = cptp_map(input_rho, random_gates(q, depth))
-        assert_almost_equal(output_rho, tensor_conj_transp(output_rho))
+        assert_almost_equal(output_rho, tensor_transpose(output_rho).conj())
 
     def testCPTPMapAndApplyGatesConsistent(self):
         q = 2
-        depth = 4
+        depth = 5
         gates = random_gates(q, depth)
         input_state = random_state(q, depth - 1)
         input_rho = pure_ρ(input_state)
@@ -65,6 +65,16 @@ class TestRandomCircuitFunctions(unittest.TestCase):
         index_order = np.arange(2 * (depth - 1)).reshape(2, -1).T.flatten()
         out_2 = np.transpose(out_2, index_order)
         assert_almost_equal(out_1, out_2)
+
+
+    def testApplyGatesPreservesNorm(self):
+        q = 2
+        depth = 4
+        gates = random_gates(q, depth)
+        state = random_state(q, depth - 1)
+        state = apply_gates(state, gates)
+        assert_almost_equal(1., inner_product(state, state))
+
 
     def testNextStepGivesProbabilities(self):
         q = 2
@@ -87,13 +97,23 @@ class TestRandomCircuitFunctions(unittest.TestCase):
         trace = tensor_trace(rho)
         assert_almost_equal(trace, 1.)
 
-    def testApplyGatesPreservesNorm(self):
+    def testTraceSquareComputesTraceSquare(self):
         q = 2
-        depth = 4
-        gates = random_gates(q, depth)
-        state = random_state(q, depth - 1)
-        state = apply_gates(state, gates)
-        assert_almost_equal(1., inner_product(state, state))
+        depth = 3
+        rho = random_ρ(q, depth)
+        purity = trace_square(rho)
+        matrix_rho = tensor_to_matrix(rho)
+        matrix_purity = np.trace(matrix_rho @ matrix_rho)
+        assert_almost_equal(purity, matrix_purity)
+
+    def testRandomRhoIsImpure(self):
+        q = 2
+        depth = 3
+
+        for _ in range(10):
+            rho = random_ρ(q, depth)
+            purity = trace_square(rho)
+            assert purity < 1.
 
     def testPureRhoIsPure(self):
         q = 2

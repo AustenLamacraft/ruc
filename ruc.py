@@ -28,8 +28,7 @@ def cptp_map(ρ, gates):
     """
     Quantum channel corresponding to fixed depth circuit defined by gates.
 
-    ρ is a numpy array of shape `[q,q,...q]` (`2*depth` times),
-    where q is the local Hilbert space dimension.
+    ρ is a numpy array of shape `[q,q,...q]` (`2*depth` times), where q is the local Hilbert space dimension.
 
     We assume `depth` row alternating with `depth` column indices: [r0, c0, r1, c1, ...]
 
@@ -103,24 +102,22 @@ def tensor_trace(tensor):
     return tensor
 
 
-def tensor_conj_transp(tensor):
+def tensor_transpose(tensor):
     """
-    Calculate the conjugate transpose of a tensor with rows and column multi-indices as [r0, c0, r1, c1, ...]
+    Calculate the transpose of a tensor with rows and column multi-indices as [r0, c0, r1, c1, ...]
     """
-    tensor = tensor.conj()
     num_indices = len(tensor.shape)
     trans_perm = np.arange(num_indices).reshape([-1,2])[:,::-1].flatten()
     tensor = tensor.transpose(trans_perm)
 
     return tensor
 
-
 def trace_square(tensor):
     """
     Calculate the trace of the square of a tensor with rows and column multi-indices as [r0, c0, r1, c1, ...]
     """
     num_indices = len(tensor.shape)
-    return np.tensordot(tensor, tensor_conj_transp(tensor), axes=num_indices)
+    return np.tensordot(tensor, tensor_transpose(tensor), axes=num_indices)
 
 def inner_product(state1, state2):
     """
