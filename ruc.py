@@ -80,17 +80,21 @@ def apply_gates(state, gates):
 
 def next_step(state, gates):
     """
-    Return next ancilla state from q**2 possible outcomes, as well as indices (s_1, s_2) of physical states.
+    Return the probabilities of each (s1, s2) pair of physical indices, along with the ancilla states that go with each.
     """
 
     state = apply_gates(state, gates)
     q = state.shape[0]
-    probs = np.zeros([q, q])
+    probs = []
+    states = []
     for phys_index in np.ndindex(q, q):
         ancilla_state = state[phys_index]
-        probs[phys_index] = square_norm(ancilla_state)
+        prob = square_norm(ancilla_state)
+        ancilla_state = ancilla_state / np.sqrt(prob)
+        states.append(ancilla_state)
+        probs.append(prob)
 
-    return probs
+    return probs, states
 
 def tensor_trace(tensor):
     """

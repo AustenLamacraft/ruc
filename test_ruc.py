@@ -81,8 +81,8 @@ class TestRandomCircuitFunctions(unittest.TestCase):
         depth = 4
         gates = random_gates(q, depth)
         input_state = random_state(q, depth - 1)
-        probs = next_step(input_state, gates)
-        assert_almost_equal(1., np.sum(probs))
+        probs, _ = next_step(input_state, gates)
+        assert_almost_equal(1., sum(probs))
 
     def testCPTPMapPositive(self):
         """
