@@ -13,6 +13,13 @@ class TestRandomCircuitFunctions(unittest.TestCase):
         uudag = [gate @ gate.conj().transpose() for gate in gates_as_matrices]
         [assert_allclose(prod, np.identity(q**2, dtype=complex), atol=1e-14) for prod in uudag]
 
+    def testRandomConservingGatesAreUnitary(self):
+        depth = 4
+        gates = conserving_gates(depth)
+        gates_as_matrices = [gate.reshape(2*[4]) for gate in gates]
+        uudag = [gate @ gate.conj().transpose() for gate in gates_as_matrices]
+        [assert_allclose(prod, np.identity(4, dtype=complex), atol=1e-14) for prod in uudag]
+
     def testGatesAreCContiguous(self):
         q = 2
         depth = 4

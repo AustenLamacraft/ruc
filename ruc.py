@@ -54,7 +54,9 @@ def cptp_map(ρ, gates):
         ρ = np.einsum('AaxC,BbyD,CDab...->AB...xy', gate, gate.conj(), ρ,
                       optimize=['einsum_path', (0, 2), (0, 1)])
 
-    ρ = np.einsum('xC,yD,CD...->...xy', gates[-1][0, 0], gates[-1][0, 0].conj(), ρ,
+    # Note that at this step we set the initial state to be Neel-like in order that
+    # conserving circuits still do something interesting
+    ρ = np.einsum('xC,yD,CD...->...xy', gates[-1][0, 1], gates[-1][0, 1].conj(), ρ,
                   optimize=['einsum_path', (0, 2), (0, 1)])
 
     return ρ
@@ -159,6 +161,23 @@ def matrix_to_tensor(matrix, q):
 
 def random_gates(q, depth):
     return unitary_group.rvs(q ** 2, size=depth).reshape([depth, q, q, q, q])
+
+def conserving_gates(depth):
+    """
+    Random conserving gates for spin-1/2
+    """
+    gates = np.zeros([depth, 2, 2, 2 ,2], dtype=np.complex)
+    phases = np.exp(2j * np.pi * np.random.rand(depth, 2))
+    gates[:, 0, 0, 0, 0] =  phases[:, 0]
+    gates[:, 1, 1, 1, 1] = phases[:, 1]
+    u2_gates = unitary_group.rvs(2, size=depth)
+    gates[:, 0, 1, 0, 1] = u2_gates[:, 0, 0]
+    gates[:, 1, 0, 1, 0] = u2_gates[:, 1, 1]
+    gates[:, 0, 1, 1, 0] = u2_gates[:, 0, 1]
+    gates[:, 1, 0, 0, 1] = u2_gates[:, 1, 0]
+
+    return gates
+
 
 
 def random_ρ(q, depth):
